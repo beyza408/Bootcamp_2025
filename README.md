@@ -1,3 +1,11 @@
 # Bootcamp_2025
+# Takım İsmi 
+Takım 191 Veri Bilimi & Yapay Zeka
+# Takım Üyeleri
+ ● Scrum Master - Beyzanur Şahin 
 
-Information About Team and Product
+ 
+ ● Product Owner
+
+ 
+ ● Devoloper
