@@ -9,3 +9,6 @@ Takım 191 Veri Bilimi & Yapay Zeka
 
  
  ● Devoloper
+ 
+ # Product Backlog URL
+ https://trello.com/b/xDVQyzhr/tak%C4%B1m-191
