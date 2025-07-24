@@ -25,7 +25,9 @@ Kullanıcılar su tüketimi, adım sayısı, uyku saati ve ruh hali gibi veriler
 - Kullanıcı bazlı veri kaydı ve yönetimi.
 - Responsive ve temiz kullanıcı arayüzü.
 
-  ## Teknolojiler
+
+
+ ## Teknolojiler
 
 - Python 3.8+
 - Flask Web Framework
