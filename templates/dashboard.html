@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <title>Dashboard - {{ user.name }}</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+
+<header>
+    <h1>Merhaba, {{ user.name }}</h1>
+    <nav>
+        <a href="{{ url_for('index') }}">Ana Sayfa</a>
+        <a href="{{ url_for('logout') }}">Çıkış Yap</a>
+    </nav>
+</header>
+
+<main>
+    <h2>Günlük Sağlık Verileriniz</h2>
+
+    {% if data %}
+    <table>
+        <thead>
+            <tr>
+                <th>Tarih</th>
+                <th>Su Tüketimi (L)</th>
+                <th>Adım Sayısı</th>
+                <th>Uyku Saati</th>
+                <th>Ruh Hali</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in data %}
+            <tr>
+                <td>{{ entry.date.strftime("%Y-%m-%d") }}</td>
+                <td>{{ entry.water_intake }}</td>
+                <td>{{ entry.steps }}</td>
+                <td>{{ entry.sleep_hours }}</td>
+                <td>{{ entry.mood }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <section style="max-width:700px; margin-top:40px;">
+        <canvas id="healthChart"></canvas>
+    </section>
+
+    <script>
+        const chartData = {{ chart_data|safe }};
+        const ctx = document.getElementById('healthChart').getContext('2d');
+        const healthChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: chartData.dates,
+                datasets: [
+                    {
+                        label: 'Su Tüketimi (Litre)',
+                        data: chartData.water,
+                        borderColor: 'blue',
+                        fill: false,
+                        tension: 0.2
+                    },
+                    {
+                        label: 'Adım Sayısı',
+                        data: chartData.steps,
+                        borderColor: 'green',
+                        fill: false,
+                        tension: 0.2
+                    },
+                    {
+                        label: 'Uyku Saati',
+                        data: chartData.sleep,
+                        borderColor: 'purple',
+                        fill: false,
+                        tension: 0.2
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                stacked: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    </script>
+    {% else %}
+    <p>Henüz veri yok. <a href="{{ url_for('index') }}">Ana sayfaya dön ve chatbot ile veri ekle.</a></p>
+    {% endif %}
+
+    <!-- Chatbot Bölümü -->
+    <section id="chatbot-section" style="margin-top: 50px; max-width: 700px;">
+        <h2>Günlük Veri Girişi (Chatbot)</h2>
+        <div id="chatbot-container" style="border:1px solid #ccc; padding:15px; height:300px; overflow-y:auto; background:#f9f9f9;">
+            <div id="chatbot-messages"></div>
+        </div>
+        <input type="text" id="chatbot-input" placeholder="Cevabınızı yazın..." style="width:80%; padding:8px; margin-top:10px;" />
+        <button id="chatbot-send" style="padding:8px 16px;">Gönder</button>
+    </section>
+
+    <script>
+        const questions = {{ questions | tojson }};
+        let qIndex = 0;
+
+        const messagesDiv = document.getElementById('chatbot-messages');
+        const input = document.getElementById('chatbot-input');
+        const sendBtn = document.getElementById('chatbot-send');
+
+        function appendMessage(text, sender='bot') {
+            const p = document.createElement('p');
+            p.textContent = text;
+            p.style.fontWeight = sender === 'bot' ? 'bold' : 'normal';
+            p.style.margin = '8px 0';
+            messagesDiv.appendChild(p);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        async function sendAnswer(answer) {
+            const response = await fetch('/chatbot/next', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({answer})
+            });
+            const data = await response.json();
+
+            if (data.done) {
+                appendMessage(data.message);
+                input.disabled = true;
+                sendBtn.disabled = true;
+            } else {
+                appendMessage(data.question);
+                qIndex++;
+            }
+        }
+
+        sendBtn.addEventListener('click', () => {
+            const answer = input.value.trim();
+            if (!answer) return;
+            appendMessage(answer, 'user');
+            input.value = '';
+            sendAnswer(answer);
+        });
+
+        input.addEventListener('keypress', e => {
+            if (e.key === 'Enter') {
+                sendBtn.click();
+            }
+        });
+
+        window.onload = () => {
+            appendMessage(questions[0]);
+        }
+    </script>
+
+</main>
+
+</body>
+</html>

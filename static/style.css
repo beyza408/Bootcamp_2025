@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <title>Dashboard - {{ user.name }}</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <style>
+      /* Container */
+      .container {
+        max-width: 900px;
+        margin: 40px auto;
+        padding: 0 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 50px;
+      }
+
+      /* Tablo sarmalayıcı */
+      .table-wrapper {
+        width: 100%;
+        overflow-x: auto;
+        display: flex;
+        justify-content: center;
+      }
+
+      /* Tablo */
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        max-width: 700px;
+        background: white;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        border-radius: 10px;
+        overflow: hidden;
+      }
+
+      table thead {
+        background: #457b9d;
+        color: white;
+      }
+
+      table th, table td {
+        padding: 12px 15px;
+        text-align: center;
+        border-bottom: 1px solid #ddd;
+      }
+
+      table tbody tr:hover {
+        background: #f0f8ff;
+      }
+
+      /* Grafik ve Chatbot ortak stil */
+      #healthChart, .chatbot-card {
+        max-width: 700px;
+        width: 100%;
+        margin: 0 auto;
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        box-shadow: 0 6px 15px rgba(0,0,0,0.1);
+      }
+
+      /* Chatbot kart */
+      .chatbot-card h3 {
+        text-align: center;
+        color: #1d3557;
+        margin-bottom: 15px;
+      }
+
+      /* Chatbot mesaj kutusu */
+      #chatbot-messages {
+        height: 250px;
+        overflow-y: auto;
+        background: #fafafa;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 10px;
+        margin-bottom: 15px;
+      }
+
+      #chatbot-messages p {
+        margin: 5px 0;
+        padding: 6px 10px;
+        border-radius: 5px;
+        max-width: 90%;
+      }
+
+      /* Bot mesajları */
+      #chatbot-messages p.bot {
+        background: #e9f5ff;
+        color: #1d3557;
+        align-self: flex-start;
+        font-weight: bold;
+      }
+
+      /* Kullanıcı mesajları */
+      #chatbot-messages p.user {
+        background: #d1e7dd;
+        color: #0f5132;
+        align-self: flex-end;
+      }
+
+      /* Chatbot input ve buton */
+      #chatbot-input {
+        width: 75%;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 8px;
+        margin-right: 10px;
+        font-size: 1rem;
+      }
+
+      #chatbot-send {
+        padding: 10px 20px;
+        background: #457b9d;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background 0.3s ease;
+      }
+
+      #chatbot-send:hover {
+        background: #1d3557;
+      }
+
+    </style>
+</head>
+<body>
+
+<header>
+    <h1 style="text-align:center; margin-top: 30px;">Merhaba, {{ user.name }}</h1>
+    <nav style="text-align:center; margin-bottom: 40px;">
+        <a href="{{ url_for('index') }}" style="margin:0 15px; color:#457b9d; text-decoration:none; font-weight:600;">Ana Sayfa</a>
+        <a href="{{ url_for('logout') }}" style="margin:0 15px; color:#e63946; text-decoration:none; font-weight:600;">Çıkış Yap</a>
+    </nav>
+</header>
+
+<main class="container">
+
+  <!-- Tablo -->
+  <section class="table-wrapper">
+    {% if data %}
+    <table>
+      <thead>
+        <tr>
+          <th>Tarih</th>
+          <th>Su Tüketimi (L)</th>
+          <th>Adım Sayısı</th>
+          <th>Uyku Saati</th>
+          <th>Ruh Hali</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in data %}
+        <tr>
+          <td>{{ entry.date.strftime("%Y-%m-%d") }}</td>
+          <td>{{ entry.water_intake }}</td>
+          <td>{{ entry.steps }}</td>
+          <td>{{ entry.sleep_hours }}</td>
+          <td>{{ entry.mood }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p>Henüz veri yok. <a href="{{ url_for('index') }}">Ana sayfaya dön ve chatbot ile veri ekle.</a></p>
+    {% endif %}
+  </section>
+
+  <!-- Grafik -->
+  <section>
+    <canvas id="healthChart"></canvas>
+  </section>
+
+  <!-- Chatbot -->
+  <section class="chatbot-card">
+    <h3>Günlük Veri Girişi (Chatbot)</h3>
+    <div id="chatbot-messages"></div>
+    <input type="text" id="chatbot-input" placeholder="Cevabınızı yazın..." />
+    <button id="chatbot-send">Gönder</button>
+  </section>
+
+</main>
+
+<script>
+  const questions = {{ questions | tojson }};
+  let qIndex = 0;
+
+  const messagesDiv = document.getElementById('chatbot-messages');
+  const input = document.getElementById('chatbot-input');
+  const sendBtn = document.getElementById('chatbot-send');
+
+  function appendMessage(text, sender='bot') {
+      const p = document.createElement('p');
+      p.textContent = text;
+      p.className = sender;  // 'bot' veya 'user'
+      p.style.margin = '8px 0';
+      messagesDiv.appendChild(p);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  }
+
+  async function sendAnswer(answer) {
+      const response = await fetch('/chatbot/next', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({answer})
+      });
+      const data = await response.json();
+
+      if (data.done) {
+          appendMessage(data.message, 'bot');
+          input.disabled = true;
+          sendBtn.disabled = true;
+      } else {
+          appendMessage(data.question, 'bot');
+          qIndex++;
+      }
+  }
+
+  sendBtn.addEventListener('click', () => {
+      const answer = input.value.trim();
+      if (!answer) return;
+      appendMessage(answer, 'user');
+      input.value = '';
+      sendAnswer(answer);
+  });
+
+  input.addEventListener('keypress', e => {
+      if (e.key === 'Enter') {
+          sendBtn.click();
+      }
+  });
+
+  window.onload = () => {
+      appendMessage(questions[0], 'bot');
+  }
+
+  // Chart.js kodu
+  const chartData = {{ chart_data | safe }};
+  const ctx = document.getElementById('healthChart').getContext('2d');
+  const healthChart = new Chart(ctx, {
+      type: 'line',
+      data: {
+          labels: chartData.dates,
+          datasets: [
+              {
+                  label: 'Su Tüketimi (Litre)',
+                  data: chartData.water,
+                  borderColor: 'blue',
+                  fill: false,
+                  tension: 0.2
+              },
+              {
+                  label: 'Adım Sayısı',
+                  data: chartData.steps,
+                  borderColor: 'green',
+                  fill: false,
+                  tension: 0.2
+              },
+              {
+                  label: 'Uyku Saati',
+                  data: chartData.sleep,
+                  borderColor: 'purple',
+                  fill: false,
+                  tension: 0.2
+              }
+          ]
+      },
+      options: {
+          responsive: true,
+          interaction: {
+              mode: 'index',
+              intersect: false,
+          },
+          stacked: false,
+          scales: {
+              y: {
+                  beginAtZero: true
+              }
+          }
+      }
+  });
+</script>
+
+</body>
+</html>

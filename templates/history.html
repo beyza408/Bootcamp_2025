@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <title>Geçmiş Veriler</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>Günlük Veri Geçmişin</h1>
+    <table border="1" cellpadding="8" cellspacing="0">
+        <thead>
+            <tr>
+                <th>Tarih</th>
+                <th>Su Tüketimi (Litre)</th>
+                <th>Adım Sayısı</th>
+                <th>Uyku Süresi (Saat)</th>
+                <th>Ruh Hali</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for data in data_list %}
+            <tr>
+                <td>{{ data.date.strftime("%d-%m-%Y") }}</td>
+                <td>{{ data.water_intake }}</td>
+                <td>{{ data.steps }}</td>
+                <td>{{ data.sleep_hours }}</td>
+                <td>{{ data.mood }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5">Henüz veri bulunmamaktadır.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p><a href="{{ url_for('dashboard') }}">Geri Dön</a></p>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8" />
+    <title>Chatbot</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        #chatbot-container {
+            max-width: 600px;
+            margin: 20px auto;
+            border: 1px solid #ccc;
+            padding: 15px;
+        }
+        #chatbot-messages {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: #f9f9f9;
+        }
+        .bot-message { font-weight: bold; margin: 5px 0; }
+        .user-message { margin: 5px 0; }
+        #chatbot-input { width: 80%; padding: 8px; }
+        #chatbot-send { padding: 8px 12px; }
+    </style>
+</head>
+<body>
+    <h1>Günlük Veri Chatbotu</h1>
+    <div id="chatbot-container">
+        <div id="chatbot-messages"></div>
+        <input type="text" id="chatbot-input" placeholder="Cevabınızı yazın..." autocomplete="off" />
+        <button id="chatbot-send">Gönder</button>
+    </div>
+    <p><a href="{{ url_for('dashboard') }}">Geri Dön</a></p>
+
+<script>
+    const questions = {{ questions | tojson }};
+    let qIndex = 0;
+
+    const messagesDiv = document.getElementById('chatbot-messages');
+    const input = document.getElementById('chatbot-input');
+    const sendBtn = document.getElementById('chatbot-send');
+
+    function appendMessage(text, sender='bot') {
+        const p = document.createElement('p');
+        p.textContent = text;
+        p.className = sender === 'bot' ? 'bot-message' : 'user-message';
+        messagesDiv.appendChild(p);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    async function sendAnswer(answer) {
+        const response = await fetch('/chatbot/next', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({answer})
+        });
+        const data = await response.json();
+
+        if (data.done) {
+            appendMessage(data.message);
+            input.disabled = true;
+            sendBtn.disabled = true;
+        } else {
+            appendMessage(data.question);
+            qIndex++;
+        }
+    }
+
+    sendBtn.addEventListener('click', () => {
+        const answer = input.value.trim();
+        if (!answer) return;
+        appendMessage(answer, 'user');
+        input.value = '';
+        sendAnswer(answer);
+    });
+
+    input.addEventListener('keypress', e => {
+        if (e.key === 'Enter') {
+            sendBtn.click();
+        }
+    });
+
+    window.onload = () => {
+        appendMessage(questions[0]);
+    }
+</script>
+</body>
+</html>

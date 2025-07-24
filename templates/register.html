@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Kayıt Ol - Dijital Sağlık Asistanı</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #6f9ea5, #ffffff);
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      background:  #006064;
+      color: white;
+      padding: 15px;
+      text-align: center;
+    }
+    .container {
+      max-width: 500px;
+      margin: 40px auto;
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    h2 { text-align: center; color: #006064;
+    label { display: block; margin-top: 10px; font-weight: bold; }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button {
+      margin-top: 20px;
+      width: 100%;
+      padding: 10px;
+      background: #ad1457;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:hover { background: #880e4f; }
+    a { display: block; text-align: center; margin-top: 15px; color: #ad1457; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Dijital Sağlık Asistanı</h1>
+  </header>
+
+  <div class="container">
+    <h2>Kayıt Ol</h2>
+    <form method="POST">
+      <label>Adınız</label>
+      <input type="text" name="name" required>
+
+      <label>Yaş</label>
+      <input type="number" name="age">
+
+      <label>Cinsiyet</label>
+      <select name="gender">
+        <option value="">Seçiniz</option>
+        <option value="Kadın">Kadın</option>
+        <option value="Erkek">Erkek</option>
+      </select>
+
+      <label>Sağlık Hedefi</label>
+      <input type="text" name="health_goal">
+
+      <label>Şifre</label>
+      <input type="password" name="password" required>
+
+      <button type="submit">Kayıt Ol</button>
+    </form>
+    <a href="{{ url_for('login') }}">Zaten hesabın var mı? Giriş Yap</a>
+  </div>
+</body>
+</html>

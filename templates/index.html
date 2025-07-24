@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Dijital Sağlık Asistanı</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(to right, #6f9ea5, #ffffff);
+      margin: 0;
+      padding: 0;
+      color: #333;
+    }
+    header {
+      background: #6f9ea5;
+      color: white;
+      padding: 15px;
+      text-align: center;
+    }
+    nav {
+      background: #006064;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      padding: 10px;
+    }
+    nav a {
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    nav a:hover {
+      color: #80deea;
+    }
+    .container {
+      max-width: 800px;
+      margin: 20px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    #chatbot-container {
+      margin-top: 20px;
+      border: 1px solid #ccc;
+      padding: 10px;
+      border-radius: 10px;
+      background: #f9f9f9;
+    }
+    #chatbot-messages {
+      height: 250px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin-bottom: 10px;
+      background: #fff;
+    }
+    #chatbot-input {
+      width: 75%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    #chatbot-send {
+      padding: 8px 15px;
+      border: none;
+      background: #00838f;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #chatbot-send:hover {
+      background: #006064;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Dijital Sağlık Asistanı</h1>
+    <p>Sağlığını kolayca takip et, günlük verilerini kaydet!</p>
+  </header>
+
+  <nav>
+    {% if user %}
+      <span>Hoş geldin, {{ user.name }}!</span>
+      <a href="{{ url_for('logout') }}">Çıkış Yap</a>
+    {% else %}
+      <a href="{{ url_for('register') }}">Kayıt Ol</a>
+      <a href="{{ url_for('login') }}">Giriş Yap</a>
+    {% endif %}
+  </nav>
+
+  <div class="container">
+    {% if not user %}
+      <p>Devam etmek için lütfen giriş yapın veya kayıt olun.</p>
+    {% else %}
+      <h2>Günlük Sağlık Takibi</h2>
+      <div id="chatbot-container">
+        <div id="chatbot-messages"></div>
+        <input type="text" id="chatbot-input" placeholder="Cevabınızı yazın..." />
+        <button id="chatbot-send">Gönder</button>
+      </div>
+    {% endif %}
+  </div>
+
+  <script>
+    const questions = {{ questions|tojson }};
+    let qIndex = 0;
+
+    const messagesDiv = document.getElementById('chatbot-messages');
+    const input = document.getElementById('chatbot-input');
+    const sendBtn = document.getElementById('chatbot-send');
+
+    function appendMessage(text, sender='bot') {
+      const p = document.createElement('p');
+      p.textContent = text;
+      p.style.fontWeight = sender === 'bot' ? 'bold' : 'normal';
+      messagesDiv.appendChild(p);
+      messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    async function sendAnswer(answer) {
+      const response = await fetch('/chatbot/next', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({answer})
+      });
+      const data = await response.json();
+
+      if (data.done) {
+        appendMessage(data.message);
+        input.disabled = true;
+        sendBtn.disabled = true;
+      } else {
+        appendMessage(data.question);
+        qIndex++;
+      }
+    }
+
+    if (sendBtn) {
+      sendBtn.addEventListener('click', () => {
+        const answer = input.value.trim();
+        if (!answer) return;
+        appendMessage(answer, 'user');
+        input.value = '';
+        sendAnswer(answer);
+      });
+
+      input.addEventListener('keypress', e => {
+        if (e.key === 'Enter') {
+          sendBtn.click();
+        }
+      });
+
+      window.onload = () => {
+        appendMessage(questions[0]);
+      };
+    }
+  </script>
+</body>
+</html>
